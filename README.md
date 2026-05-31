@@ -64,7 +64,7 @@ Building this in public, one piece at a time:
 
 - [x] Capture real campaign data as structured files
 - [x] Compute funnel metrics in code
-- [ ] Compare campaigns and segments
+- [x] Compare campaigns and segments
 - [ ] Automate the data collection
 - [ ] Load into a database with a proper transformation layer
 

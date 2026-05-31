@@ -2,16 +2,21 @@ import csv
 import glob
 import os
 
-# every campaign file lives in the data folder, named campaign_XX.csv
 DATA = "data"
 
-# the funnel stages, in order. each stage is (label, column, the value that counts)
+# funnel stages, in order: (label, column, the value that counts)
 STAGES = [
     ("Accepted",  "Accepted?",       "Y"),
     ("Replied",   "Response",        "Yes"),
     ("Booked",    "Call Booked?",    "Y"),
     ("Completed", "Call Completed?", "Y"),
 ]
+
+# columns we slice a campaign by; first one present in the file wins
+DIMENSIONS = ["Seniority Tier", "City"]
+
+# a segment needs at least this many sent to get its own row
+MIN_SEGMENT = 10
 
 
 def load(path):
@@ -27,15 +32,21 @@ def pct(n, base):
     return f"{n / base * 100:.1f}%" if base else "0.0%"
 
 
+def print_table(header, rows):
+    table = [header] + rows
+    widths = [max(len(str(row[i])) for row in table) for i in range(len(header))]
+    for i, row in enumerate(table):
+        print("  ".join(str(t).ljust(widths[j]) for j, t in enumerate(row)))
+        if i == 0:
+            print("  ".join("-" * w for w in widths))
+
+
 def funnel(rows):
     scraped = len(rows)
-    # "sent" = rows where I actually sent a request (has a date)
     sent = sum(1 for r in rows if cell(r, "Connection Sent Date"))
-
     counts = {"Sent": sent}
     for label, column, value in STAGES:
         counts[label] = sum(1 for r in rows if cell(r, column) == value)
-
     return scraped, counts
 
 
@@ -44,7 +55,6 @@ def show(name, scraped, counts):
     print(f"\n{name}")
     print(f"  Scraped:   {scraped}")
     print(f"  Sent:      {sent}")
-
     prev = sent
     for label, _, _ in STAGES:
         n = counts[label]
@@ -53,11 +63,9 @@ def show(name, scraped, counts):
 
 
 def compare(results):
-    # results is a list of (name, scraped, counts), one per campaign
     print("\n" + "=" * 50)
     print("Side-by-side comparison (% is share of sent)\n")
-
-    metric_rows = ["Scraped", "Sent", "Accepted", "Replied", "Booked", "Completed"]
+    metrics = ["Scraped", "Sent", "Accepted", "Replied", "Booked", "Completed"]
 
     def cell_value(metric, scraped, counts):
         if metric == "Scraped":
@@ -67,19 +75,51 @@ def compare(results):
             return str(n)
         return f"{n} ({pct(n, counts['Sent'])})"
 
-    # build the table as rows of text, starting with the header
     header = ["Stage"] + [name for name, _, _ in results]
-    table = [header]
-    for metric in metric_rows:
-        table.append([metric] + [cell_value(metric, s, c) for _, s, c in results])
+    rows = [[m] + [cell_value(m, s, c) for _, s, c in results] for m in metrics]
+    print_table(header, rows)
 
-    # size each column to its widest cell so everything lines up
-    widths = [max(len(row[i]) for row in table) for i in range(len(header))]
 
-    for i, row in enumerate(table):
-        print("  ".join(text.ljust(widths[j]) for j, text in enumerate(row)))
-        if i == 0:
-            print("  ".join("-" * w for w in widths))
+def find_dimension(rows):
+    for d in DIMENSIONS:
+        if d in rows[0]:
+            return d
+    return None
+
+
+def segment(name, rows):
+    dim = find_dimension(rows)
+    if not dim:
+        return
+
+    # group the rows by their dimension value
+    groups = {}
+    for r in rows:
+        groups.setdefault(cell(r, dim) or "(unknown)", []).append(r)
+
+    seg = [(key, funnel(grp)[1]) for key, grp in groups.items()]
+    seg.sort(key=lambda x: -x[1]["Sent"])
+
+    big = [(k, c) for k, c in seg if c["Sent"] >= MIN_SEGMENT]
+    small = [c for k, c in seg if c["Sent"] < MIN_SEGMENT]
+
+    print(f"\n{name} by {dim} (groups with at least {MIN_SEGMENT} sent)")
+    header = ["Segment", "Sent", "Accepted", "Replied", "Booked", "Completed"]
+    rows_out = []
+    for k, c in big:
+        s = c["Sent"]
+        rows_out.append([k, s, f"{c['Accepted']} ({pct(c['Accepted'], s)})",
+                         f"{c['Replied']} ({pct(c['Replied'], s)})", c["Booked"], c["Completed"]])
+
+    # roll every too-small group into one "Other" line so totals still add up
+    if small:
+        ss = sum(c["Sent"] for c in small)
+        agg = {m: sum(c[m] for c in small) for m in ["Accepted", "Replied", "Booked", "Completed"]}
+        rows_out.append([f"Other ({len(small)} small)", ss,
+                         f"{agg['Accepted']} ({pct(agg['Accepted'], ss)})",
+                         f"{agg['Replied']} ({pct(agg['Replied'], ss)})", agg["Booked"], agg["Completed"]])
+
+    print_table(header, rows_out)
 
 
 files = sorted(glob.glob(os.path.join(DATA, "campaign_*.csv")))
@@ -92,3 +132,7 @@ for path in files:
     show(name, scraped, counts)
 
 compare(results)
+
+for path in files:
+    name = os.path.splitext(os.path.basename(path))[0].replace("_", " ").title()
+    segment(name, load(path))

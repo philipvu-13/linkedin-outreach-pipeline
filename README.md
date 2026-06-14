@@ -25,9 +25,9 @@ manual step with code as I go.
 
 ## The funnel, in plain terms
 
-For each campaign I reached out to about 200 people and followed them through
-five stages. Most people drop off along the way, so the numbers shrink as you
-read down. That shrinking shape is the funnel.
+For each campaign I reach out to about 200 people and follow them through five
+stages. Most people drop off along the way, so the numbers shrink as you read
+down. That shrinking shape is the funnel.
 
 - **Sent** – I sent a connection request (some scraped profiles were dead, so this is fewer than I pulled)
 - **Accepted** – they accepted it
@@ -35,28 +35,45 @@ read down. That shrinking shape is the funnel.
 - **Booked** – they agreed to a call
 - **Completed** – the call actually happened
 
+## The campaigns
+
+Each campaign targets a different audience, which matters a lot when reading the
+numbers below. The point isn't to run one big blast; it's to see how different
+groups of people respond to the same kind of outreach.
+
+- **Campaign 1** – Data engineers (split by seniority: Senior DE, Analytics, Entry/Junior)
+- **Campaign 2** – Analytics engineers
+- **Campaign 3** – Technical recruiters in the data space
+- **Campaign 4** – Founders of AI startups and companies that lean heavily on data
+
 ## Results so far
 
-Snapshot as of May 30, 2026. Both campaigns are still active, so contacts can
-still accept, reply, or attend booked calls. These are current standings, not
+Snapshot as of June 14, 2026. Campaigns are still active, so contacts can still
+accept, reply, or attend booked calls. Campaigns 3 and 4 went out most recently,
+which is why their later stages are still empty. These are current standings, not
 final numbers. Contacts are anonymized; percentages are share of sent.
 
-| Stage | Campaign 1 | Campaign 2 |
-|---|---|---|
-| Scraped leads | 200 | 194 |
-| Sent | 191 | 186 |
-| Accepted | 50 (26%) | 29 (16%) |
-| Replied | 22 (12%) | 10 (5%) |
-| Booked | 11 (6%) | 8 (4%) |
-| Completed | 6 (3%) | 5 (3%) |
+| Stage | C1 (Data Eng) | C2 (Analytics Eng) | C3 (Recruiters) | C4 (Founders) |
+|---|---|---|---|---|
+| Scraped leads | 200 | 206 | 203 | 204 |
+| Sent | 191 | 186 | 189 | 193 |
+| Accepted | 51 (27%) | 39 (21%) | 25 (13%) | 25 (13%) |
+| Replied | 22 (12%) | 12 (7%) | 0 (0%) | 0 (0%) |
+| Booked | 12 (6%) | 8 (4%) | 0 (0%) | 0 (0%) |
+| Completed | 9 (5%) | 7 (4%) | 0 (0%) | 0 (0%) |
 
 I source leads with a scraper, so some profiles turn out to be dead or invalid.
-"Scraped" is everyone I pulled; "Sent" is who I could actually reach. Those 9
-and 8 are bad source data the pipeline filters out.
+"Scraped" is everyone I pulled; "Sent" is who I could actually reach. The gap
+between the two is bad source data the pipeline filters out.
 
-Acceptance dropped from 26% to 16% between the two campaigns. Figuring out why,
-whether it's targeting, messaging, or just noise from a small sample, is the
-kind of question this project is being built to answer.
+### Reading the acceptance rate
+
+Acceptance falls from 27% to 13% across the four campaigns, but that isn't a
+straight decline in outreach quality. Each campaign is a different audience.
+Working engineers and analysts (Campaigns 1 and 2) accept at a noticeably higher
+rate than recruiters and founders (Campaigns 3 and 4), who get far more inbound
+and are harder to reach. Separating audience effects from messaging effects is
+exactly the kind of question this project is being built to answer.
 
 ## Status
 
@@ -68,7 +85,7 @@ Building this in public, one piece at a time:
 - [ ] Automate the data collection
 - [ ] Load into a database with a proper transformation layer
 
-## How the campaign was run
+## How the campaigns were run
 
 - **Apify** – scraped lead lists from LinkedIn/Apollo
 - **Google Sheets** – tracked every contact and outcome by hand
@@ -85,6 +102,6 @@ The data side this project is rebuilding into:
 ## Data
 
 The `data` folder holds one anonymized CSV per campaign, one row per contact.
-Both files share the same funnel columns. Campaign 1 also records each contact's
-seniority level; campaign 2 records city instead. Reconciling small differences
-like that is part of the work.
+All files share the same funnel columns. Campaign 1 records each contact's
+seniority tier; Campaigns 2 through 4 record city instead. Reconciling small
+differences like that is part of the work.
